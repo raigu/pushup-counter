@@ -75,7 +75,16 @@ docker compose pull
 docker compose up -d
 ```
 
-Data is preserved in the `./data` volume.
+Data is preserved in the `./data` volume. Database schema migrations run automatically on startup — no manual steps needed.
+
+## Database Migrations
+
+Schema changes are handled via ordered migrations in `db.js`. On startup, the app checks the current schema version (`PRAGMA user_version`) and runs any new migrations.
+
+Rules for contributors:
+- **Never** modify an existing migration
+- Only append new migrations to the array
+- Each migration must be forward-only (no destructive changes without a data migration step)
 
 ## Development
 
