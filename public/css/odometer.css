@@ -34,6 +34,7 @@ body {
   font-size: 1.5rem;
   font-weight: bold;
   letter-spacing: 4px;
+  text-transform: uppercase;
   margin-bottom: 12px;
   color: #ccc;
 }
