@@ -73,6 +73,15 @@ async function submitPushups() {
     msg.textContent = `Added ${count} pushups! New total: ${data.total}`;
     document.getElementById('current-total').textContent = data.total;
     saveLastCount(count);
+    try {
+      const totalsRes = await fetch('/api/totals');
+      if (totalsRes.ok) {
+        const totals = await totalsRes.json();
+        msg.textContent += '\n' + getRankingText(totals);
+      }
+    } catch (e) {
+      // ranking is best-effort
+    }
     fetchHistory();
   } catch (e) {
     msg.className = 'message error';
@@ -110,6 +119,20 @@ async function fetchHistory() {
   } catch (e) {
     // silently ignore history fetch errors
   }
+}
+
+function getRankingText(totals) {
+  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  const rank = sorted.findIndex(([name]) => name === person) + 1;
+  const total = sorted.length;
+  if (rank === 1 && sorted.length > 1) {
+    const gap = sorted[0][1] - sorted[1][1];
+    return `#1 of ${total} — ${gap} ahead of ${sorted[1][0]}`;
+  } else if (rank > 1) {
+    const gap = sorted[rank - 2][1] - sorted[rank - 1][1];
+    return `#${rank} of ${total} — ${gap} behind ${sorted[rank - 2][0]}`;
+  }
+  return `#1 of ${total}`;
 }
 
 // Event listeners
