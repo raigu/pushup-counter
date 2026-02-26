@@ -1,22 +1,10 @@
 const express = require('express');
-const Database = require('better-sqlite3');
 const path = require('path');
+const db = require('./db');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Database setup
-const db = new Database(path.join(__dirname, 'data', 'pushups.db'));
-db.pragma('journal_mode = WAL');
-db.exec(`
-  CREATE TABLE IF NOT EXISTS pushup_entries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    person TEXT NOT NULL,
-    count INTEGER NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
 
 // Config: secret paths from env vars
 const PEOPLE = {
