@@ -6,26 +6,16 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Config: secret paths from env vars
-const PEOPLE = {
-  MAIT: process.env.MAIT_PATH || 'mait3242',
-  RENNO: process.env.RENNO_PATH || 'renno3242',
-  RAIN: process.env.RAIN_PATH || 'rain3242',
-  RAIT: process.env.RAIT_PATH || 'rait3242',
-};
-
-// Reverse lookup: secret -> person name
-const SECRET_TO_PERSON = {};
-for (const [person, secret] of Object.entries(PEOPLE)) {
-  SECRET_TO_PERSON[secret] = person;
-}
-
-// API: get totals
+// API: get totals for all users
 app.get('/api/totals', (req, res) => {
+  const users = db.prepare('SELECT name FROM users ORDER BY name').all();
+  const totals = {};
+  for (const u of users) {
+    totals[u.name] = 0;
+  }
   const rows = db.prepare(
-    'SELECT person, COALESCE(SUM(count), 0) as total FROM pushup_entries GROUP BY person'
+    'SELECT person, COALESCE(SUM(count), 0) as total FROM pushup_entries WHERE person IN (SELECT name FROM users) GROUP BY person'
   ).all();
-  const totals = { MAIT: 0, RENNO: 0, RAIN: 0, RAIT: 0 };
   for (const row of rows) {
     totals[row.person] = row.total;
   }
@@ -36,14 +26,12 @@ app.get('/api/totals', (req, res) => {
 app.post('/api/push', (req, res) => {
   const { person, count, secret } = req.body;
 
-  if (!person || !PEOPLE[person]) {
-    return res.status(400).json({ error: 'Invalid person' });
-  }
-  if (!secret || PEOPLE[person] !== secret) {
+  const user = db.prepare('SELECT name FROM users WHERE name = ? AND secret = ?').get(person, secret);
+  if (!user) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   const num = parseInt(count, 10);
-  if (!num || num < 1 || num > 250) {
+  if (Number.isNaN(num) || num < 1 || num > 250) {
     return res.status(400).json({ error: 'Count must be 1-250' });
   }
 
@@ -53,21 +41,21 @@ app.post('/api/push', (req, res) => {
   res.json({ total: row.total });
 });
 
-// API: get admin info (person name + total) by secret
+// API: get admin info by secret
 app.get('/api/admin-info', (req, res) => {
   const secret = req.query.secret;
-  const person = SECRET_TO_PERSON[secret];
-  if (!person) {
+  const user = db.prepare('SELECT name FROM users WHERE secret = ?').get(secret);
+  if (!user) {
     return res.status(404).json({ error: 'Not found' });
   }
-  const row = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM pushup_entries WHERE person = ?').get(person);
-  res.json({ person, total: row.total });
+  const row = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM pushup_entries WHERE person = ?').get(user.name);
+  res.json({ person: user.name, total: row.total });
 });
 
 // Admin page: serve admin.html for secret URLs
 app.get('/:secret', (req, res) => {
-  const person = SECRET_TO_PERSON[req.params.secret];
-  if (!person) {
+  const user = db.prepare('SELECT name FROM users WHERE secret = ?').get(req.params.secret);
+  if (!user) {
     return res.status(404).send('Not found');
   }
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
