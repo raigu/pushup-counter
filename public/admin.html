@@ -26,18 +26,49 @@
     }
     h1 { font-size: 2rem; margin-bottom: 8px; }
     .total { font-size: 1.2rem; color: #aaa; margin-bottom: 32px; }
-    input[type="number"] {
-      width: 100%;
-      padding: 16px;
-      font-size: 2rem;
-      text-align: center;
+    .tap-area {
+      background: #0f3460;
+      border: 2px solid #333;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: background 0.1s;
+    }
+    .tap-area:active { background: #1a4a80; }
+    .tap-area .count-display {
+      font-size: 4rem;
+      font-weight: bold;
+      line-height: 1;
+      color: #fff;
+    }
+    .tap-area .tap-hint {
+      font-size: 0.85rem;
+      color: #667;
+      margin-top: 8px;
+    }
+    .adjust-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .adjust-btn {
+      flex: 1;
+      padding: 14px 0;
+      font-size: 1.1rem;
+      font-weight: bold;
       border: 2px solid #333;
       border-radius: 8px;
       background: #0f3460;
       color: #fff;
-      margin-bottom: 16px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
     }
-    button {
+    .adjust-btn:active { background: #1a4a80; }
+    .submit-btn {
       width: 100%;
       padding: 16px;
       font-size: 1.2rem;
@@ -48,8 +79,8 @@
       cursor: pointer;
       font-weight: bold;
     }
-    button:hover { background: #c73e54; }
-    button:disabled { background: #555; cursor: not-allowed; }
+    .submit-btn:hover { background: #c73e54; }
+    .submit-btn:disabled { background: #555; cursor: not-allowed; }
     .message {
       margin-top: 16px;
       padding: 12px;
@@ -64,8 +95,17 @@
   <div class="container">
     <h1 id="person-name">&mdash;</h1>
     <div class="total">Total: <span id="current-total">0</span></div>
-    <input type="number" id="count-input" min="1" max="250" value="50" placeholder="Pushups">
-    <button type="button" id="submit-btn" onclick="submitPushups()">Submit</button>
+    <div class="tap-area" id="tap-area">
+      <div class="count-display" id="count-display">50</div>
+      <div class="tap-hint">tap to +1</div>
+    </div>
+    <div class="adjust-row">
+      <button type="button" class="adjust-btn" data-delta="-10">-10</button>
+      <button type="button" class="adjust-btn" data-delta="-1">-1</button>
+      <button type="button" class="adjust-btn" data-delta="1">+1</button>
+      <button type="button" class="adjust-btn" data-delta="10">+10</button>
+    </div>
+    <button type="button" class="submit-btn" id="submit-btn">Submit 50</button>
     <div id="message" class="message"></div>
   </div>
   <script src="/js/admin.js"></script>
