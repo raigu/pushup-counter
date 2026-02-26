@@ -55,6 +55,28 @@ The second argument is the secret URL path. After adding a user with secret `mai
 
 The public page auto-refreshes every 30 seconds.
 
+## Updating
+
+```bash
+docker pull ghcr.io/raigu/pushup-counter:latest
+docker stop pushups && docker rm pushups
+docker run -d \
+  --name pushups \
+  -p 3000:3000 \
+  -v ./data:/app/data \
+  --restart unless-stopped \
+  ghcr.io/raigu/pushup-counter:latest
+```
+
+Or with docker compose:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Data is preserved in the `./data` volume.
+
 ## Development
 
 ```bash
