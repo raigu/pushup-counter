@@ -13,9 +13,9 @@ Usage:
   node cli.js help                        Show this help
 
 Examples:
-  node cli.js add-user MAIT mait3242
+  node cli.js add-user mait mait3242
   node cli.js list-users
-  node cli.js remove-user MAIT`);
+  node cli.js remove-user mait`);
 }
 
 switch (command) {
@@ -27,8 +27,8 @@ switch (command) {
       process.exit(1);
     }
     try {
-      db.prepare('INSERT INTO users (name, secret) VALUES (?, ?)').run(name.toUpperCase(), secret);
-      console.log(`User ${name.toUpperCase()} added.`);
+      db.prepare('INSERT INTO users (name, secret) VALUES (?, ?)').run(name.toLowerCase(), secret);
+      console.log(`User ${name.toLowerCase()} added.`);
     } catch (e) {
       if (e.message.includes('UNIQUE')) {
         console.error(`Error: User or secret already exists.`);
@@ -55,12 +55,12 @@ switch (command) {
       console.error('Usage: node cli.js remove-user <NAME>');
       process.exit(1);
     }
-    const result = db.prepare('DELETE FROM users WHERE name = ?').run(name.toUpperCase());
+    const result = db.prepare('DELETE FROM users WHERE name = ?').run(name.toLowerCase());
     if (result.changes === 0) {
-      console.error(`User ${name.toUpperCase()} not found.`);
+      console.error(`User ${name.toLowerCase()} not found.`);
       process.exit(1);
     }
-    console.log(`User ${name.toUpperCase()} removed. Pushup history kept.`);
+    console.log(`User ${name.toLowerCase()} removed. Pushup history kept.`);
     break;
   }
   case 'help':
