@@ -1,0 +1,13 @@
+services:
+  pushups:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - MAIT_PATH=mait3242
+      - RENNO_PATH=renno3242
+      - RAIN_PATH=rain3242
+      - RAIT_PATH=rait3242
+    restart: unless-stopped
