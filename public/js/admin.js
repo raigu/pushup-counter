@@ -22,21 +22,27 @@ function updateDisplay() {
 
 function adjustCount(delta) {
   count = Math.max(1, Math.min(250, count + delta));
+  document.getElementById('message').className = 'message';
   updateDisplay();
 }
 
 async function init() {
-  const res = await fetch(`/api/admin-info?secret=${encodeURIComponent(secret)}`);
-  if (!res.ok) {
-    document.getElementById('person-name').textContent = 'Invalid link';
+  try {
+    const res = await fetch(`/api/admin-info?secret=${encodeURIComponent(secret)}`);
+    if (!res.ok) {
+      document.getElementById('person-name').textContent = 'Invalid link';
+      document.getElementById('submit-btn').disabled = true;
+      return;
+    }
+    const data = await res.json();
+    person = data.person;
+    document.getElementById('person-name').textContent = person;
+    document.getElementById('current-total').textContent = data.total;
+    updateDisplay();
+  } catch (e) {
+    document.getElementById('person-name').textContent = 'Connection error';
     document.getElementById('submit-btn').disabled = true;
-    return;
   }
-  const data = await res.json();
-  person = data.person;
-  document.getElementById('person-name').textContent = person;
-  document.getElementById('current-total').textContent = data.total;
-  updateDisplay();
 }
 
 async function submitPushups() {
