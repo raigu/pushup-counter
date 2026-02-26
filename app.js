@@ -52,6 +52,19 @@ function createApp(db) {
     res.json({ person: user.name, total: row.total });
   });
 
+  // API: get recent entries for user
+  app.get('/api/history', (req, res) => {
+    const secret = req.query.secret;
+    const user = db.prepare('SELECT id FROM users WHERE secret = ?').get(secret);
+    if (!user) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const rows = db.prepare(
+      'SELECT count, created_at FROM pushup_entries WHERE user_id = ? ORDER BY created_at DESC LIMIT 10'
+    ).all(user.id);
+    res.json(rows);
+  });
+
   // Admin page: serve admin.html for secret URLs
   app.get('/:secret', (req, res) => {
     const user = db.prepare('SELECT id FROM users WHERE secret = ?').get(req.params.secret);

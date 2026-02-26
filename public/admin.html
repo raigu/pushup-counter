@@ -89,6 +89,22 @@
     }
     .message.success { display: block; background: #1b4332; color: #95d5b2; }
     .message.error { display: block; background: #461111; color: #ff6b6b; }
+    .history {
+      margin-top: 24px;
+      border-top: 1px solid #333;
+      padding-top: 16px;
+      text-align: left;
+    }
+    .history-title {
+      font-size: 0.9rem;
+      color: #667;
+      margin-bottom: 8px;
+    }
+    .history-entry {
+      font-size: 0.85rem;
+      color: #aaa;
+      padding: 4px 0;
+    }
   </style>
 </head>
 <body>
@@ -107,6 +123,10 @@
     </div>
     <button type="button" class="submit-btn" id="submit-btn">Submit 50</button>
     <div id="message" class="message"></div>
+    <div id="history" class="history" style="display:none">
+      <div class="history-title">Recent</div>
+      <div id="history-list"></div>
+    </div>
   </div>
   <script src="/js/admin.js"></script>
 </body>

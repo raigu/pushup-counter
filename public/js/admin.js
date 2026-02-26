@@ -39,6 +39,7 @@ async function init() {
     document.getElementById('person-name').textContent = person;
     document.getElementById('current-total').textContent = data.total;
     updateDisplay();
+    fetchHistory();
   } catch (e) {
     document.getElementById('person-name').textContent = 'Connection error';
     document.getElementById('submit-btn').disabled = true;
@@ -72,12 +73,42 @@ async function submitPushups() {
     msg.textContent = `Added ${count} pushups! New total: ${data.total}`;
     document.getElementById('current-total').textContent = data.total;
     saveLastCount(count);
+    fetchHistory();
   } catch (e) {
     msg.className = 'message error';
     msg.textContent = 'Network error';
   } finally {
     btn.disabled = false;
     updateDisplay();
+  }
+}
+
+function formatDate(isoStr) {
+  const d = new Date(isoStr + 'Z');
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    + ', ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+
+async function fetchHistory() {
+  try {
+    const res = await fetch(`/api/history?secret=${encodeURIComponent(secret)}`);
+    if (!res.ok) return;
+    const entries = await res.json();
+    const container = document.getElementById('history');
+    const list = document.getElementById('history-list');
+    if (entries.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+    list.replaceChildren(...entries.map(e => {
+      const div = document.createElement('div');
+      div.className = 'history-entry';
+      div.textContent = `${e.count} — ${formatDate(e.created_at)}`;
+      return div;
+    }));
+    container.style.display = '';
+  } catch (e) {
+    // silently ignore history fetch errors
   }
 }
 

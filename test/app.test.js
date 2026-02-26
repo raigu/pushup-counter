@@ -136,6 +136,55 @@ describe('API', () => {
     });
   });
 
+  describe('GET /api/history', () => {
+    it('returns 404 for invalid secret', async () => {
+      const res = await request(server, 'GET', '/api/history?secret=nonexistent');
+      assert.equal(res.status, 404);
+    });
+
+    it('returns empty array for user with no entries', async () => {
+      seedUser(db, 'hank', 'sec-hank');
+      const res = await request(server, 'GET', '/api/history?secret=sec-hank');
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body, []);
+
+      db.prepare("DELETE FROM users").run();
+    });
+
+    it('returns entries in descending created_at order', async () => {
+      seedUser(db, 'iris', 'sec-iris');
+      const userId = db.prepare('SELECT id FROM users WHERE name = ?').get('iris').id;
+      db.prepare("INSERT INTO pushup_entries (user_id, count, created_at) VALUES (?, 10, '2025-01-01 10:00:00')").run(userId);
+      db.prepare("INSERT INTO pushup_entries (user_id, count, created_at) VALUES (?, 20, '2025-01-02 10:00:00')").run(userId);
+      db.prepare("INSERT INTO pushup_entries (user_id, count, created_at) VALUES (?, 30, '2025-01-03 10:00:00')").run(userId);
+
+      const res = await request(server, 'GET', '/api/history?secret=sec-iris');
+      assert.equal(res.status, 200);
+      assert.equal(res.body.length, 3);
+      assert.equal(res.body[0].count, 30);
+      assert.equal(res.body[1].count, 20);
+      assert.equal(res.body[2].count, 10);
+
+      db.prepare("DELETE FROM pushup_entries").run();
+      db.prepare("DELETE FROM users").run();
+    });
+
+    it('limits results to 10', async () => {
+      seedUser(db, 'jake', 'sec-jake');
+      const userId = db.prepare('SELECT id FROM users WHERE name = ?').get('jake').id;
+      for (let i = 0; i < 15; i++) {
+        db.prepare("INSERT INTO pushup_entries (user_id, count) VALUES (?, ?)").run(userId, i + 1);
+      }
+
+      const res = await request(server, 'GET', '/api/history?secret=sec-jake');
+      assert.equal(res.status, 200);
+      assert.equal(res.body.length, 10);
+
+      db.prepare("DELETE FROM pushup_entries").run();
+      db.prepare("DELETE FROM users").run();
+    });
+  });
+
   describe('GET /:secret', () => {
     it('returns 404 for invalid secret', async () => {
       const res = await request(server, 'GET', '/nosuchsecret');
