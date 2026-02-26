@@ -6,7 +6,8 @@ db.pragma('journal_mode = WAL');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
-    name TEXT PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
     secret TEXT NOT NULL UNIQUE
   )
 `);
@@ -14,7 +15,7 @@ db.exec(`
 db.exec(`
   CREATE TABLE IF NOT EXISTS pushup_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    person TEXT NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id),
     count INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
