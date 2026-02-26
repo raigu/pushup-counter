@@ -1,6 +1,29 @@
-// Extract secret from URL path
 const secret = window.location.pathname.replace('/', '');
 let person = null;
+let count = getLastCount();
+
+function getLastCount() {
+  const match = document.cookie.match(/(?:^|; )lastPushupCount=(\d+)/);
+  const val = match ? parseInt(match[1], 10) : 50;
+  return (val >= 1 && val <= 250) ? val : 50;
+}
+
+function saveLastCount(val) {
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `lastPushupCount=${val}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function updateDisplay() {
+  document.getElementById('count-display').textContent = count;
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = `Submit ${count}`;
+  btn.disabled = count < 1 || !person;
+}
+
+function adjustCount(delta) {
+  count = Math.max(1, Math.min(250, count + delta));
+  updateDisplay();
+}
 
 async function init() {
   const res = await fetch(`/api/admin-info?secret=${encodeURIComponent(secret)}`);
@@ -13,17 +36,16 @@ async function init() {
   person = data.person;
   document.getElementById('person-name').textContent = person;
   document.getElementById('current-total').textContent = data.total;
+  updateDisplay();
 }
 
 async function submitPushups() {
-  const input = document.getElementById('count-input');
-  const count = parseInt(input.value, 10);
   const msg = document.getElementById('message');
   const btn = document.getElementById('submit-btn');
 
-  if (!count || count < 1 || count > 250) {
+  if (count < 1 || count > 250) {
     msg.className = 'message error';
-    msg.textContent = 'Enter a number between 1 and 250';
+    msg.textContent = 'Count must be 1-250';
     return;
   }
 
@@ -43,13 +65,24 @@ async function submitPushups() {
     msg.className = 'message success';
     msg.textContent = `Added ${count} pushups! New total: ${data.total}`;
     document.getElementById('current-total').textContent = data.total;
-    input.value = 50;
+    saveLastCount(count);
   } catch (e) {
     msg.className = 'message error';
     msg.textContent = 'Network error';
   } finally {
     btn.disabled = false;
+    updateDisplay();
   }
 }
 
+// Event listeners
+document.getElementById('tap-area').addEventListener('click', () => adjustCount(1));
+
+document.querySelectorAll('.adjust-btn').forEach(btn => {
+  btn.addEventListener('click', () => adjustCount(parseInt(btn.dataset.delta, 10)));
+});
+
+document.getElementById('submit-btn').addEventListener('click', submitPushups);
+
+updateDisplay();
 init();
