@@ -56,12 +56,17 @@ async function submitPushups() {
       msg.textContent = data.error || 'Error';
       return;
     }
-    msg.className = 'message success';
-    msg.textContent = `Added ${count} pushups! New total: ${data.total}`;
+    if (data.counts_for_challenge === false) {
+      msg.className = 'message warning';
+      msg.textContent = `Added ${count} pushups (outside challenge period — stored in history but not counted on scoreboard). New total: ${data.total}`;
+    } else {
+      msg.className = 'message success';
+      msg.textContent = `Added ${count} pushups! New total: ${data.total}`;
+    }
     document.getElementById('current-total').textContent = data.total;
     saveLastCount(count);
     try {
-      const totalsRes = await fetch('/api/totals');
+      const totalsRes = await fetch('/api/challenge/totals');
       if (totalsRes.ok) {
         const totals = await totalsRes.json();
         msg.textContent += '\n' + getRankingText(totals);
