@@ -16,12 +16,31 @@ const migrations = [
     count INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
+  // 3: Create settings table with challenge date defaults
+  {
+    sql: `CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)`,
+    seed: (db) => {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      if (endDate.getDate() !== now.getDate()) endDate.setDate(0);
+      const end = endDate.toISOString().slice(0, 10);
+      db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('challenge_start', today);
+      db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('challenge_end', end);
+    }
+  },
 ];
 
 function migrate(db) {
   const currentVersion = db.pragma('user_version', { simple: true });
   for (let i = currentVersion; i < migrations.length; i++) {
-    db.exec(migrations[i]);
+    const m = migrations[i];
+    if (typeof m === 'string') {
+      db.exec(m);
+    } else {
+      db.exec(m.sql);
+      if (m.seed) m.seed(db);
+    }
     db.pragma(`user_version = ${i + 1}`);
   }
 }

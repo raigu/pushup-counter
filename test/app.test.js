@@ -38,7 +38,7 @@ describe('DB migrations', () => {
   it('sets correct schema version', () => {
     const db = makeDb();
     const version = db.pragma('user_version', { simple: true });
-    assert.equal(version, 2);
+    assert.equal(version, 3);
     db.close();
   });
 
@@ -47,6 +47,18 @@ describe('DB migrations', () => {
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map(r => r.name);
     assert.ok(tables.includes('users'));
     assert.ok(tables.includes('pushup_entries'));
+    db.close();
+  });
+
+  it('creates settings table with default challenge dates', () => {
+    const db = makeDb();
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all().map(r => r.name);
+    assert.ok(tables.includes('settings'));
+    const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
+    const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
+    assert.ok(start.value.match(/^\d{4}-\d{2}-\d{2}$/));
+    assert.ok(end.value.match(/^\d{4}-\d{2}-\d{2}$/));
+    assert.ok(new Date(end.value) > new Date(start.value));
     db.close();
   });
 });
