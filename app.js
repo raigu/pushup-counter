@@ -6,15 +6,25 @@ function createApp(db) {
   app.use(express.json());
   app.use(express.static(path.join(__dirname, 'public')));
 
-  // API: get totals for all users
-  app.get('/api/totals', (req, res) => {
+  // API: get challenge dates
+  app.get('/api/challenge', (req, res) => {
+    const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
+    const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
+    res.json({ start: start.value, end: end.value });
+  });
+
+  // API: get totals within challenge period
+  app.get('/api/challenge/totals', (req, res) => {
+    const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
+    const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
     const rows = db.prepare(`
       SELECT u.name, COALESCE(SUM(e.count), 0) as total
       FROM users u
       LEFT JOIN pushup_entries e ON e.user_id = u.id
+        AND e.created_at >= ? AND e.created_at < date(?, '+1 day')
       GROUP BY u.id
       ORDER BY u.name
-    `).all();
+    `).all(start, end);
     const totals = {};
     for (const row of rows) {
       totals[row.name] = row.total;
@@ -39,17 +49,6 @@ function createApp(db) {
 
     const row = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM pushup_entries WHERE user_id = ?').get(user.id);
     res.json({ total: row.total });
-  });
-
-  // API: get admin info by secret
-  app.get('/api/admin-info', (req, res) => {
-    const secret = req.query.secret;
-    const user = db.prepare('SELECT id, name FROM users WHERE secret = ?').get(secret);
-    if (!user) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-    const row = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM pushup_entries WHERE user_id = ?').get(user.id);
-    res.json({ person: user.name, total: row.total });
   });
 
   // API: get recent entries for user

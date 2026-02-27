@@ -78,26 +78,38 @@ describe('API', () => {
     server.close(() => { db.close(); done(); });
   });
 
-  describe('GET /api/totals', () => {
+  describe('GET /api/challenge', () => {
+    it('returns challenge start and end dates', async () => {
+      const res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.status, 200);
+      assert.ok(res.body.start.match(/^\d{4}-\d{2}-\d{2}$/));
+      assert.ok(res.body.end.match(/^\d{4}-\d{2}-\d{2}$/));
+    });
+  });
+
+  describe('GET /api/challenge/totals', () => {
     it('returns empty object when no users', async () => {
-      const res = await request(server, 'GET', '/api/totals');
+      const res = await request(server, 'GET', '/api/challenge/totals');
       assert.equal(res.status, 200);
       assert.deepEqual(res.body, {});
     });
 
-    it('returns totals after adding users and pushups', async () => {
+    it('returns only pushups within challenge period', async () => {
+      const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
+      const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
+
       seedUser(db, 'alice', 'sec-alice');
-      seedUser(db, 'bob', 'sec-bob');
-      db.prepare("INSERT INTO pushup_entries (user_id, count) VALUES (1, 10)").run();
-      db.prepare("INSERT INTO pushup_entries (user_id, count) VALUES (1, 5)").run();
-      db.prepare("INSERT INTO pushup_entries (user_id, count) VALUES (2, 20)").run();
+      const userId = db.prepare('SELECT id FROM users WHERE name = ?').get('alice').id;
 
-      const res = await request(server, 'GET', '/api/totals');
+      // Entry within challenge period
+      db.prepare("INSERT INTO pushup_entries (user_id, count, created_at) VALUES (?, 10, ?)").run(userId, start + ' 12:00:00');
+      // Entry outside challenge period (before start)
+      db.prepare("INSERT INTO pushup_entries (user_id, count, created_at) VALUES (?, 20, '2020-01-01 12:00:00')").run(userId);
+
+      const res = await request(server, 'GET', '/api/challenge/totals');
       assert.equal(res.status, 200);
-      assert.equal(res.body.alice, 15);
-      assert.equal(res.body.bob, 20);
+      assert.equal(res.body.alice, 10);
 
-      // cleanup
       db.prepare("DELETE FROM pushup_entries").run();
       db.prepare("DELETE FROM users").run();
     });
@@ -128,23 +140,6 @@ describe('API', () => {
       assert.equal(res.status, 400);
 
       db.prepare("DELETE FROM users").run();
-    });
-  });
-
-  describe('GET /api/admin-info', () => {
-    it('returns user info for valid secret', async () => {
-      seedUser(db, 'frank', 'sec-frank');
-      const res = await request(server, 'GET', '/api/admin-info?secret=sec-frank');
-      assert.equal(res.status, 200);
-      assert.equal(res.body.person, 'frank');
-      assert.equal(res.body.total, 0);
-
-      db.prepare("DELETE FROM users").run();
-    });
-
-    it('returns 404 for invalid secret', async () => {
-      const res = await request(server, 'GET', '/api/admin-info?secret=nonexistent');
-      assert.equal(res.status, 404);
     });
   });
 
