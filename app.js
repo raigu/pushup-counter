@@ -47,8 +47,16 @@ function createApp(db) {
 
     db.prepare('INSERT INTO pushup_entries (user_id, count) VALUES (?, ?)').run(user.id, num);
 
-    const row = db.prepare('SELECT COALESCE(SUM(count), 0) as total FROM pushup_entries WHERE user_id = ?').get(user.id);
-    res.json({ total: row.total });
+    const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
+    const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
+    const now = new Date().toISOString().slice(0, 10);
+    const countsForChallenge = now >= start && now <= end;
+
+    const row = db.prepare(`
+      SELECT COALESCE(SUM(count), 0) as total FROM pushup_entries
+      WHERE user_id = ? AND created_at >= ? AND created_at < date(?, '+1 day')
+    `).get(user.id, start, end);
+    res.json({ total: row.total, counts_for_challenge: countsForChallenge });
   });
 
   // API: get recent entries for user

@@ -141,6 +141,37 @@ describe('API', () => {
 
       db.prepare("DELETE FROM users").run();
     });
+
+    it('returns counts_for_challenge true when within period', async () => {
+      seedUser(db, 'carol', 'sec-carol');
+      const res = await request(server, 'POST', '/api/push', { person: 'carol', count: 25, secret: 'sec-carol' });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.counts_for_challenge, true);
+
+      db.prepare("DELETE FROM pushup_entries").run();
+      db.prepare("DELETE FROM users").run();
+    });
+
+    it('returns counts_for_challenge false when outside period', async () => {
+      seedUser(db, 'dave', 'sec-dave');
+      // Set challenge to past dates
+      db.prepare("UPDATE settings SET value = '2020-01-01' WHERE key = 'challenge_start'").run();
+      db.prepare("UPDATE settings SET value = '2020-02-01' WHERE key = 'challenge_end'").run();
+
+      const res = await request(server, 'POST', '/api/push', { person: 'dave', count: 10, secret: 'sec-dave' });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.counts_for_challenge, false);
+
+      // Restore challenge dates to defaults (today + 1 month)
+      const today = new Date().toISOString().slice(0, 10);
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(today);
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(endDate.toISOString().slice(0, 10));
+
+      db.prepare("DELETE FROM pushup_entries").run();
+      db.prepare("DELETE FROM users").run();
+    });
   });
 
   describe('GET /api/history', () => {
