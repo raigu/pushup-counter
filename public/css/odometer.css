@@ -20,6 +20,15 @@ body {
   width: 100%;
 }
 
+.countdown {
+  color: #aaa;
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.countdown:empty { display: none; }
+
 .board {
   display: grid;
   grid-template-columns: 1fr 1fr;

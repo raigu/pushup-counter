@@ -52,16 +52,50 @@ async function fetchTotals() {
   }
 }
 
+let countdownInterval = null;
+
 async function fetchChallenge() {
   try {
     const res = await fetch('/api/challenge');
     const data = await res.json();
     const opts = { month: 'short', day: 'numeric', year: 'numeric' };
-    const start = new Date(data.start + 'T00:00:00').toLocaleDateString(undefined, opts);
-    const end = new Date(data.end + 'T00:00:00').toLocaleDateString(undefined, opts);
-    document.getElementById('challenge-dates').textContent = `${start} – ${end}`;
+    const start = new Date(data.start + 'T00:00:00');
+    const end = new Date(data.end + 'T00:00:00');
+    document.getElementById('challenge-dates').textContent =
+      start.toLocaleDateString(undefined, opts) + ' – ' + end.toLocaleDateString(undefined, opts);
+
+    startCountdown(start);
   } catch (e) {
     // silently ignore
+  }
+}
+
+function startCountdown(startDate) {
+  const el = document.getElementById('countdown');
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  function tick() {
+    const now = new Date();
+    const diff = startDate - now;
+    if (diff <= 0) {
+      el.textContent = 'Challenge started!';
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      return;
+    }
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    el.textContent = 'Starts in ' + days + 'd ' + hours + 'h ' + minutes + 'm ' + seconds + 's';
+  }
+
+  // Only show countdown if challenge is in the future
+  if (startDate > new Date()) {
+    tick();
+    countdownInterval = setInterval(tick, 1000);
   }
 }
 
