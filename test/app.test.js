@@ -228,5 +228,20 @@ describe('API', () => {
       const res = await request(server, 'GET', '/nosuchsecret');
       assert.equal(res.status, 404);
     });
+
+    it('renders admin page with embedded user data for valid secret', async () => {
+      seedUser(db, 'grace', 'sec-grace');
+      db.prepare("INSERT INTO pushup_entries (user_id, count) VALUES (?, 30)").run(
+        db.prepare('SELECT id FROM users WHERE name = ?').get('grace').id
+      );
+      const res = await request(server, 'GET', '/sec-grace');
+      assert.equal(res.status, 200);
+      assert.ok(typeof res.body === 'string'); // HTML response
+      assert.ok(res.body.includes('grace'));
+      assert.ok(res.body.includes('window.__USER__'));
+
+      db.prepare("DELETE FROM pushup_entries").run();
+      db.prepare("DELETE FROM users").run();
+    });
   });
 });

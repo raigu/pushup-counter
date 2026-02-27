@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 
 function createApp(db) {
@@ -74,11 +75,23 @@ function createApp(db) {
 
   // Admin page: serve admin.html for secret URLs
   app.get('/:secret', (req, res) => {
-    const user = db.prepare('SELECT id FROM users WHERE secret = ?').get(req.params.secret);
+    const user = db.prepare('SELECT id, name FROM users WHERE secret = ?').get(req.params.secret);
     if (!user) {
       return res.status(404).send('Not found');
     }
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
+    const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
+    const row = db.prepare(`
+      SELECT COALESCE(SUM(count), 0) as total FROM pushup_entries
+      WHERE user_id = ? AND created_at >= ? AND created_at < date(?, '+1 day')
+    `).get(user.id, start, end);
+
+    const html = fs.readFileSync(path.join(__dirname, 'public', 'admin.html'), 'utf8');
+    const injected = html.replace(
+      '</head>',
+      `<script>window.__USER__ = ${JSON.stringify({ person: user.name, total: row.total, secret: req.params.secret })};</script>\n</head>`
+    );
+    res.type('html').send(injected);
   });
 
   return app;

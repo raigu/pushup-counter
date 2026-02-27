@@ -1,5 +1,5 @@
-const secret = window.location.pathname.replace('/', '');
-let person = null;
+const { person: initialPerson, total: initialTotal, secret } = window.__USER__;
+let person = initialPerson;
 let count = getLastCount();
 
 function getLastCount() {
@@ -26,24 +26,11 @@ function adjustCount(delta) {
   updateDisplay();
 }
 
-async function init() {
-  try {
-    const res = await fetch(`/api/admin-info?secret=${encodeURIComponent(secret)}`);
-    if (!res.ok) {
-      document.getElementById('person-name').textContent = 'Invalid link';
-      document.getElementById('submit-btn').disabled = true;
-      return;
-    }
-    const data = await res.json();
-    person = data.person;
-    document.getElementById('person-name').textContent = person;
-    document.getElementById('current-total').textContent = data.total;
-    updateDisplay();
-    fetchHistory();
-  } catch (e) {
-    document.getElementById('person-name').textContent = 'Connection error';
-    document.getElementById('submit-btn').disabled = true;
-  }
+function init() {
+  document.getElementById('person-name').textContent = person;
+  document.getElementById('current-total').textContent = initialTotal;
+  updateDisplay();
+  fetchHistory();
 }
 
 async function submitPushups() {
