@@ -27,11 +27,11 @@ function setOdometer(personId, value) {
   });
 }
 
-let knownUsers = [];
+let knownUsers = null;
 
 async function fetchTotals() {
   try {
-    const res = await fetch('/api/totals');
+    const res = await fetch('/api/challenge/totals');
     const data = await res.json();
     const users = Object.keys(data);
 
@@ -52,8 +52,22 @@ async function fetchTotals() {
   }
 }
 
+async function fetchChallenge() {
+  try {
+    const res = await fetch('/api/challenge');
+    const data = await res.json();
+    const opts = { month: 'short', day: 'numeric', year: 'numeric' };
+    const start = new Date(data.start + 'T00:00:00').toLocaleDateString(undefined, opts);
+    const end = new Date(data.end + 'T00:00:00').toLocaleDateString(undefined, opts);
+    document.getElementById('challenge-dates').textContent = `${start} – ${end}`;
+  } catch (e) {
+    // silently ignore
+  }
+}
+
 // Initial load
 fetchTotals();
+fetchChallenge();
 
 // Refresh every 30 seconds
 setInterval(fetchTotals, 30000);
