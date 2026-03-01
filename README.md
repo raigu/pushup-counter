@@ -34,19 +34,19 @@ Users are managed via CLI inside the container:
 
 ```bash
 # Add a user (name stored lowercase, displayed uppercase)
-docker exec pushups node cli.js add-user mait mait3242
+docker exec pushups node cli.js add-user john john3242
 
 # List users
 docker exec pushups node cli.js list-users
 
 # Remove a user (pushup history is kept)
-docker exec pushups node cli.js remove-user mait
+docker exec pushups node cli.js remove-user john
 
 # Show help
 docker exec pushups node cli.js
 ```
 
-The second argument is the secret URL path. After adding a user with secret `mait3242`, their admin page is at `http://localhost:3000/mait3242`.
+The second argument is the secret URL path. After adding a user with secret `john3242`, their admin page is at `http://localhost:3000/john3242`.
 
 ## Challenge
 
@@ -57,7 +57,7 @@ A challenge defines the time period for tracking pushups. Totals on the public d
 docker exec pushups node cli.js set-challenge 2026-03-15 2027-03-15
 
 # Set a title (displayed on the public dashboard)
-docker exec pushups node cli.js set-title "Renno 50k"
+docker exec pushups node cli.js set-title "Drop and give me 50k in a month"
 
 # Clear the title
 docker exec pushups node cli.js set-title
@@ -113,7 +113,7 @@ git clone https://github.com/raigu/pushup-counter.git
 cd pushup-counter
 npm install
 mkdir -p data
-node cli.js add-user mait mait3242
+node cli.js add-user john john3242
 node server.js
 ```
 

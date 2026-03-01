@@ -20,9 +20,9 @@ Usage:
   node cli.js help                        Show this help
 
 Examples:
-  node cli.js add-user mait mait3242
+  node cli.js add-user john john3242
   node cli.js list-users
-  node cli.js remove-user mait
+  node cli.js remove-user john
   node cli.js set-goal 3000
   node cli.js set-rabbit rabbit`);
 }
