@@ -129,9 +129,8 @@ function startCountdown(startDate) {
   }
 }
 
-// Initial load
-fetchTotals();
-fetchChallenge();
+// Initial load: fetch challenge first so goal is available when building board
+fetchChallenge().then(fetchTotals);
 
 // Refresh every 30 seconds
 setInterval(fetchTotals, 30000);
