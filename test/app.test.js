@@ -38,7 +38,7 @@ describe('DB migrations', () => {
   it('sets correct schema version', () => {
     const db = makeDb();
     const version = db.pragma('user_version', { simple: true });
-    assert.equal(version, 6);
+    assert.equal(version, 7);
     db.close();
   });
 
@@ -56,7 +56,7 @@ describe('DB migrations', () => {
     const colNames = info.map(c => c.name);
     assert.ok(colNames.includes('is_rabbit'));
     assert.ok(colNames.includes('rabbit_target'));
-    assert.ok(colNames.includes('rabbit_interval'));
+    assert.ok(!colNames.includes('rabbit_interval'), 'rabbit_interval should be dropped');
     db.close();
   });
 
@@ -140,7 +140,7 @@ describe('API', () => {
     });
 
     it('includes rabbits array when rabbit users exist', async () => {
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target, rabbit_interval) VALUES (?, ?, 1, 3000, 60)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge');
@@ -189,7 +189,7 @@ describe('API', () => {
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(startStr);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(endStr);
 
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target, rabbit_interval) VALUES (?, ?, 1, 3000, 60)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge/totals');
@@ -214,7 +214,7 @@ describe('API', () => {
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(futureStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(futureEnd);
 
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target, rabbit_interval) VALUES (?, ?, 1, 3000, 60)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge/totals');
@@ -235,7 +235,7 @@ describe('API', () => {
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(pastStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(pastEnd);
 
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target, rabbit_interval) VALUES (?, ?, 1, 3000, 60)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge/totals');

@@ -33,6 +33,8 @@ const migrations = [
   `ALTER TABLE users ADD COLUMN is_rabbit INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN rabbit_target INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE users ADD COLUMN rabbit_interval INTEGER NOT NULL DEFAULT 60`,
+  // 7: Drop unused rabbit_interval column
+  `ALTER TABLE users DROP COLUMN rabbit_interval`,
 ];
 
 function migrate(db) {

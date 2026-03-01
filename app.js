@@ -20,18 +20,15 @@ function createApp(db) {
   });
 
   // Compute a rabbit user's current virtual total based on elapsed time
-  function getRabbitTotal(target, interval, startStr, endStr) {
+  function getRabbitTotal(target, startStr, endStr) {
     const now = new Date();
     const start = new Date(startStr + 'T00:00:00');
     const end = new Date(endStr + 'T00:00:00');
     if (now <= start) return 0;
     if (now >= end) return target;
-    const totalMinutes = (end - start) / 60000;
-    const elapsedMinutes = (now - start) / 60000;
-    const totalIntervals = Math.floor(totalMinutes / interval);
-    if (totalIntervals <= 0) return target;
-    const intervalsElapsed = Math.floor(elapsedMinutes / interval);
-    return Math.floor(target * intervalsElapsed / totalIntervals);
+    const elapsed = now - start;
+    const total = end - start;
+    return Math.floor(target * elapsed / total);
   }
 
   // API: get totals within challenge period
@@ -39,7 +36,7 @@ function createApp(db) {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
     const rows = db.prepare(`
-      SELECT u.name, u.is_rabbit, u.rabbit_target, u.rabbit_interval,
+      SELECT u.name, u.is_rabbit, u.rabbit_target,
              COALESCE(SUM(e.count), 0) as total
       FROM users u
       LEFT JOIN pushup_entries e ON e.user_id = u.id
@@ -50,7 +47,7 @@ function createApp(db) {
     const totals = {};
     for (const row of rows) {
       if (row.is_rabbit) {
-        totals[row.name] = getRabbitTotal(row.rabbit_target, row.rabbit_interval, start, end);
+        totals[row.name] = getRabbitTotal(row.rabbit_target, start, end);
       } else {
         totals[row.name] = row.total;
       }

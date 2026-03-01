@@ -13,7 +13,7 @@ Usage:
   node cli.js set-challenge <START> <END>  Set challenge start/end dates
   node cli.js set-title [TITLE]            Set or clear challenge title
   node cli.js show-challenge               Show current challenge dates and title
-  node cli.js set-rabbit <NAME> <TARGET> [INTERVAL]  Mark user as rabbit pace-setter
+  node cli.js set-rabbit <NAME> <TARGET>   Mark user as rabbit pace-setter
   node cli.js unset-rabbit <NAME>          Remove rabbit status from user
   node cli.js help                        Show this help
 
@@ -21,7 +21,7 @@ Examples:
   node cli.js add-user mait mait3242
   node cli.js list-users
   node cli.js remove-user mait
-  node cli.js set-rabbit rabbit 3000 60   Set rabbit to reach 3000 pushups, updating every 60 min`);
+  node cli.js set-rabbit rabbit 3000      Set rabbit to reach 3000 pushups by challenge end`);
 }
 
 switch (command) {
@@ -45,13 +45,13 @@ switch (command) {
     break;
   }
   case 'list-users': {
-    const users = db.prepare('SELECT name, is_rabbit, rabbit_target, rabbit_interval FROM users ORDER BY name').all();
+    const users = db.prepare('SELECT name, is_rabbit, rabbit_target FROM users ORDER BY name').all();
     if (users.length === 0) {
       console.log('No users.');
     } else {
       for (const u of users) {
         if (u.is_rabbit) {
-          console.log(`${u.name} [rabbit: target=${u.rabbit_target}, interval=${u.rabbit_interval}min]`);
+          console.log(`${u.name} [rabbit: target=${u.rabbit_target}]`);
         } else {
           console.log(u.name);
         }
@@ -121,15 +121,9 @@ switch (command) {
   case 'set-rabbit': {
     const name = args[1];
     const target = parseInt(args[2], 10);
-    const interval = args[3] ? parseInt(args[3], 10) : 60;
     if (!name || !target || Number.isNaN(target) || target < 1) {
-      console.error('Usage: node cli.js set-rabbit <NAME> <TARGET> [INTERVAL_MINUTES]');
+      console.error('Usage: node cli.js set-rabbit <NAME> <TARGET>');
       console.error('  TARGET: total pushups the rabbit should reach by challenge end');
-      console.error('  INTERVAL: minutes between virtual pushup updates (default: 60)');
-      process.exit(1);
-    }
-    if (Number.isNaN(interval) || interval < 1) {
-      console.error('Error: Interval must be a positive number of minutes.');
       process.exit(1);
     }
     const user = db.prepare('SELECT id FROM users WHERE name = ?').get(name.toLowerCase());
@@ -137,9 +131,9 @@ switch (command) {
       console.error(`Error: User ${name.toLowerCase()} not found. Add the user first.`);
       process.exit(1);
     }
-    db.prepare('UPDATE users SET is_rabbit = 1, rabbit_target = ?, rabbit_interval = ? WHERE name = ?')
-      .run(target, interval, name.toLowerCase());
-    console.log(`User ${name.toLowerCase()} set as rabbit: target=${target}, interval=${interval}min`);
+    db.prepare('UPDATE users SET is_rabbit = 1, rabbit_target = ? WHERE name = ?')
+      .run(target, name.toLowerCase());
+    console.log(`User ${name.toLowerCase()} set as rabbit: target=${target}`);
     break;
   }
   case 'unset-rabbit': {
@@ -148,7 +142,7 @@ switch (command) {
       console.error('Usage: node cli.js unset-rabbit <NAME>');
       process.exit(1);
     }
-    const result = db.prepare('UPDATE users SET is_rabbit = 0, rabbit_target = 0, rabbit_interval = 60 WHERE name = ?')
+    const result = db.prepare('UPDATE users SET is_rabbit = 0, rabbit_target = 0 WHERE name = ?')
       .run(name.toLowerCase());
     if (result.changes === 0) {
       console.error(`User ${name.toLowerCase()} not found.`);
