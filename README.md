@@ -62,11 +62,29 @@ docker exec pushups node cli.js set-title "Drop and give me 50k in a month"
 # Clear the title
 docker exec pushups node cli.js set-title
 
+# Set a pushup goal (shows progress bar on dashboard)
+docker exec pushups node cli.js set-goal 3000
+
+# Clear the goal
+docker exec pushups node cli.js clear-goal
+
 # Show current challenge
 docker exec pushups node cli.js show-challenge
 ```
 
 The title is optional. When no title is set, nothing is displayed and the dashboard looks the same as before. Run `set-title` without an argument to clear it.
+
+## Rabbit Pace-Setter
+
+A rabbit is a virtual user that shows steady progress toward the goal, giving real users a pace to compare against. Its total is computed from elapsed time within the challenge period.
+
+```bash
+# Mark a user as rabbit
+docker exec pushups node cli.js set-rabbit eduard
+
+# Remove rabbit status
+docker exec pushups node cli.js unset-rabbit eduard
+```
 
 ## Pages
 
