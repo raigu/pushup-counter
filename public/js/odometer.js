@@ -45,7 +45,7 @@ async function fetchTotals() {
   try {
     const res = await fetch('/api/challenge/totals');
     const data = await res.json();
-    const users = Object.keys(data);
+    const users = Object.keys(data).sort((a, b) => data[b] - data[a]);
 
     // Rebuild board if users changed
     if (JSON.stringify(users) !== JSON.stringify(knownUsers)) {
