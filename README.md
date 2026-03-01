@@ -48,6 +48,26 @@ docker exec pushups node cli.js
 
 The second argument is the secret URL path. After adding a user with secret `mait3242`, their admin page is at `http://localhost:3000/mait3242`.
 
+## Challenge
+
+A challenge defines the time period for tracking pushups. Totals on the public dashboard only count pushups logged within the challenge period.
+
+```bash
+# Set challenge dates
+docker exec pushups node cli.js set-challenge 2026-03-15 2027-03-15
+
+# Set a title (displayed on the public dashboard)
+docker exec pushups node cli.js set-title "Renno 50k"
+
+# Clear the title
+docker exec pushups node cli.js set-title
+
+# Show current challenge
+docker exec pushups node cli.js show-challenge
+```
+
+The title is optional. When no title is set, nothing is displayed and the dashboard looks the same as before. Run `set-title` without an argument to clear it.
+
 ## Pages
 
 - `/` — Public dashboard with odometer counters for all users

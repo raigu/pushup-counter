@@ -10,8 +10,9 @@ Usage:
   node cli.js add-user <NAME> <SECRET>    Add a new user
   node cli.js list-users                  List all users
   node cli.js remove-user <NAME>          Remove a user (keeps pushup history)
-  node cli.js set-challenge <START> <END> Set challenge start/end dates
-  node cli.js show-challenge              Show current challenge dates
+  node cli.js set-challenge <START> <END>  Set challenge start/end dates
+  node cli.js set-title [TITLE]            Set or clear challenge title
+  node cli.js show-challenge               Show current challenge dates and title
   node cli.js help                        Show this help
 
 Examples:
@@ -86,11 +87,25 @@ switch (command) {
     console.log(`Challenge: ${start} to ${end}`);
     break;
   }
+  case 'set-title': {
+    const title = args[1];
+    if (title) {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_title', ?)").run(title);
+      console.log(`Title set: ${title}`);
+    } else {
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_title'").run();
+      console.log('Title cleared.');
+    }
+    break;
+  }
   case 'show-challenge': {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
+    const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
     if (!start || !end) {
       console.log('No challenge dates set.');
+    } else if (title) {
+      console.log(`Challenge "${title.value}": ${start.value} to ${end.value}`);
     } else {
       console.log(`Challenge: ${start.value} to ${end.value}`);
     }

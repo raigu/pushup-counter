@@ -64,6 +64,8 @@ async function fetchChallenge() {
     document.getElementById('challenge-dates').textContent =
       start.toLocaleDateString(undefined, opts) + ' – ' + end.toLocaleDateString(undefined, opts);
 
+    document.getElementById('challenge-title').textContent = data.title || '';
+
     startCountdown(start);
   } catch (e) {
     // silently ignore
