@@ -16,15 +16,32 @@ function createApp(db) {
     const goal = goalRow ? parseInt(goalRow.value, 10) : null;
     const result = { start: start.value, end: end.value, goal };
     if (title) result.title = title.value;
+    const rabbits = db.prepare("SELECT name FROM users WHERE is_rabbit = 1").all().map(r => r.name);
+    if (rabbits.length > 0) result.rabbits = rabbits;
     res.json(result);
   });
+
+  // Compute a rabbit user's current virtual total based on elapsed time
+  function getRabbitTotal(target, startStr, endStr) {
+    const now = new Date();
+    const start = new Date(startStr + 'T00:00:00');
+    const end = new Date(endStr + 'T00:00:00');
+    if (now <= start) return 0;
+    if (now >= end) return target;
+    const elapsed = now - start;
+    const total = end - start;
+    return Math.floor(target * elapsed / total);
+  }
 
   // API: get totals within challenge period
   app.get('/api/challenge/totals', (req, res) => {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
+    const goalRow = db.prepare("SELECT value FROM settings WHERE key = 'challenge_goal'").get();
+    const challengeGoal = goalRow ? parseInt(goalRow.value, 10) : 0;
     const rows = db.prepare(`
-      SELECT u.name, COALESCE(SUM(e.count), 0) as total
+      SELECT u.name, u.is_rabbit,
+             COALESCE(SUM(e.count), 0) as total
       FROM users u
       LEFT JOIN pushup_entries e ON e.user_id = u.id
         AND e.created_at >= ? AND e.created_at < date(?, '+1 day')
@@ -33,7 +50,11 @@ function createApp(db) {
     `).all(start, end);
     const totals = {};
     for (const row of rows) {
-      totals[row.name] = row.total;
+      if (row.is_rabbit && challengeGoal > 0) {
+        totals[row.name] = getRabbitTotal(challengeGoal, start, end);
+      } else {
+        totals[row.name] = row.total;
+      }
     }
     res.json(totals);
   });

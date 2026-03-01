@@ -15,12 +15,16 @@ Usage:
   node cli.js set-goal <NUMBER>            Set the pushup goal (positive integer)
   node cli.js clear-goal                   Remove the pushup goal
   node cli.js show-challenge               Show current challenge dates, title, and goal
+  node cli.js set-rabbit <NAME>            Mark user as rabbit pace-setter
+  node cli.js unset-rabbit <NAME>          Remove rabbit status from user
   node cli.js help                        Show this help
 
 Examples:
   node cli.js add-user mait mait3242
   node cli.js list-users
-  node cli.js remove-user mait`);
+  node cli.js remove-user mait
+  node cli.js set-goal 3000
+  node cli.js set-rabbit rabbit`);
 }
 
 switch (command) {
@@ -44,12 +48,16 @@ switch (command) {
     break;
   }
   case 'list-users': {
-    const users = db.prepare('SELECT name FROM users ORDER BY name').all();
+    const users = db.prepare('SELECT name, is_rabbit FROM users ORDER BY name').all();
     if (users.length === 0) {
       console.log('No users.');
     } else {
       for (const u of users) {
-        console.log(u.name);
+        if (u.is_rabbit) {
+          console.log(`${u.name} [rabbit]`);
+        } else {
+          console.log(u.name);
+        }
       }
     }
     break;
@@ -128,6 +136,36 @@ switch (command) {
       console.log(`Challenge: ${start.value} to ${end.value}`);
     }
     console.log(`Goal: ${goal ? goal.value : 'not set'}`);
+    break;
+  }
+  case 'set-rabbit': {
+    const name = args[1];
+    if (!name) {
+      console.error('Usage: node cli.js set-rabbit <NAME>');
+      process.exit(1);
+    }
+    const user = db.prepare('SELECT id FROM users WHERE name = ?').get(name.toLowerCase());
+    if (!user) {
+      console.error(`Error: User ${name.toLowerCase()} not found. Add the user first.`);
+      process.exit(1);
+    }
+    db.prepare('UPDATE users SET is_rabbit = 1 WHERE name = ?').run(name.toLowerCase());
+    console.log(`User ${name.toLowerCase()} set as rabbit.`);
+    break;
+  }
+  case 'unset-rabbit': {
+    const name = args[1];
+    if (!name) {
+      console.error('Usage: node cli.js unset-rabbit <NAME>');
+      process.exit(1);
+    }
+    const result = db.prepare('UPDATE users SET is_rabbit = 0 WHERE name = ?')
+      .run(name.toLowerCase());
+    if (result.changes === 0) {
+      console.error(`User ${name.toLowerCase()} not found.`);
+      process.exit(1);
+    }
+    console.log(`Rabbit status removed from ${name.toLowerCase()}.`);
     break;
   }
   case 'help':
