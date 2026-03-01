@@ -10,8 +10,8 @@ Usage:
   node cli.js add-user <NAME> <SECRET>    Add a new user
   node cli.js list-users                  List all users
   node cli.js remove-user <NAME>          Remove a user (keeps pushup history)
-  node cli.js set-challenge <START> <END> Set challenge start/end dates
-  node cli.js show-challenge              Show current challenge dates
+  node cli.js set-challenge <START> <END> [TITLE]  Set challenge dates and optional title
+  node cli.js show-challenge                       Show current challenge dates and title
   node cli.js help                        Show this help
 
 Examples:
@@ -68,9 +68,10 @@ switch (command) {
   case 'set-challenge': {
     const start = args[1];
     const end = args[2];
+    const title = args[3];
     if (!start || !end) {
-      console.error('Usage: node cli.js set-challenge <START_DATE> <END_DATE>');
-      console.error('Example: node cli.js set-challenge 2026-03-15 2027-03-15');
+      console.error('Usage: node cli.js set-challenge <START_DATE> <END_DATE> [TITLE]');
+      console.error('Example: node cli.js set-challenge 2026-03-15 2027-03-15 "Renno 50k"');
       process.exit(1);
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
@@ -83,14 +84,23 @@ switch (command) {
     }
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_start', ?)").run(start);
     db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_end', ?)").run(end);
-    console.log(`Challenge: ${start} to ${end}`);
+    if (title) {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_title', ?)").run(title);
+      console.log(`Challenge "${title}": ${start} to ${end}`);
+    } else {
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_title'").run();
+      console.log(`Challenge: ${start} to ${end}`);
+    }
     break;
   }
   case 'show-challenge': {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
+    const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
     if (!start || !end) {
       console.log('No challenge dates set.');
+    } else if (title) {
+      console.log(`Challenge "${title.value}": ${start.value} to ${end.value}`);
     } else {
       console.log(`Challenge: ${start.value} to ${end.value}`);
     }

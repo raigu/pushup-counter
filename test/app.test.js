@@ -85,6 +85,22 @@ describe('API', () => {
       assert.ok(res.body.start.match(/^\d{4}-\d{2}-\d{2}$/));
       assert.ok(res.body.end.match(/^\d{4}-\d{2}-\d{2}$/));
     });
+
+    it('does not include title when not set', async () => {
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_title'").run();
+      const res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.status, 200);
+      assert.equal(res.body.title, undefined);
+    });
+
+    it('includes title when set', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_title', 'Renno 50k')").run();
+      const res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.status, 200);
+      assert.equal(res.body.title, 'Renno 50k');
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_title'").run();
+    });
   });
 
   describe('GET /api/challenge/totals', () => {

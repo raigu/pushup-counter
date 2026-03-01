@@ -7,11 +7,14 @@ function createApp(db) {
   app.use(express.json());
   app.use(express.static(path.join(__dirname, 'public')));
 
-  // API: get challenge dates
+  // API: get challenge dates and optional title
   app.get('/api/challenge', (req, res) => {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
-    res.json({ start: start.value, end: end.value });
+    const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
+    const result = { start: start.value, end: end.value };
+    if (title) result.title = title.value;
+    res.json(result);
   });
 
   // API: get totals within challenge period
