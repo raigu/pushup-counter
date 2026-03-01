@@ -1,6 +1,7 @@
 const { person: initialPerson, total: initialTotal, secret } = window.__USER__;
 let person = initialPerson;
 let count = getLastCount();
+let challengeGoal = null;
 
 function getLastCount() {
   const match = document.cookie.match(/(?:^|; )lastPushupCount=(\d+)/);
@@ -26,11 +27,32 @@ function adjustCount(delta) {
   updateDisplay();
 }
 
-function init() {
+function updateGoalDisplay(total, goal) {
+  const section = document.getElementById('goal-section');
+  const fill = document.getElementById('goal-fill');
+  const text = document.getElementById('goal-text');
+  section.style.display = '';
+  const pct = Math.min(100, (total / goal) * 100);
+  fill.style.width = pct + '%';
+  fill.classList.toggle('reached', total >= goal);
+  text.textContent = `${total} / ${goal}`;
+}
+
+async function init() {
   document.getElementById('person-name').textContent = person;
   document.getElementById('current-total').textContent = initialTotal;
   updateDisplay();
   fetchHistory();
+  try {
+    const challengeRes = await fetch('/api/challenge');
+    const challengeData = await challengeRes.json();
+    if (challengeData.goal) {
+      challengeGoal = challengeData.goal;
+      updateGoalDisplay(initialTotal, challengeGoal);
+    }
+  } catch (e) {
+    // silently ignore
+  }
 }
 
 async function submitPushups() {
@@ -64,6 +86,9 @@ async function submitPushups() {
       msg.textContent = `Added ${count} pushups! New total: ${data.total}`;
     }
     document.getElementById('current-total').textContent = data.total;
+    if (challengeGoal) {
+      updateGoalDisplay(data.total, challengeGoal);
+    }
     saveLastCount(count);
     try {
       const totalsRes = await fetch('/api/challenge/totals');

@@ -12,10 +12,10 @@ function createApp(db) {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
     const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
-    const target = db.prepare("SELECT value FROM settings WHERE key = 'challenge_target'").get();
-    const result = { start: start.value, end: end.value };
+    const goalRow = db.prepare("SELECT value FROM settings WHERE key = 'challenge_goal'").get();
+    const goal = goalRow ? parseInt(goalRow.value, 10) : null;
+    const result = { start: start.value, end: end.value, goal };
     if (title) result.title = title.value;
-    if (target) result.target = parseInt(target.value, 10);
     const rabbits = db.prepare("SELECT name FROM users WHERE is_rabbit = 1").all().map(r => r.name);
     if (rabbits.length > 0) result.rabbits = rabbits;
     res.json(result);
@@ -37,8 +37,8 @@ function createApp(db) {
   app.get('/api/challenge/totals', (req, res) => {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
-    const targetRow = db.prepare("SELECT value FROM settings WHERE key = 'challenge_target'").get();
-    const challengeTarget = targetRow ? parseInt(targetRow.value, 10) : 0;
+    const goalRow = db.prepare("SELECT value FROM settings WHERE key = 'challenge_goal'").get();
+    const challengeGoal = goalRow ? parseInt(goalRow.value, 10) : 0;
     const rows = db.prepare(`
       SELECT u.name, u.is_rabbit,
              COALESCE(SUM(e.count), 0) as total
@@ -50,8 +50,8 @@ function createApp(db) {
     `).all(start, end);
     const totals = {};
     for (const row of rows) {
-      if (row.is_rabbit && challengeTarget > 0) {
-        totals[row.name] = getRabbitTotal(challengeTarget, start, end);
+      if (row.is_rabbit && challengeGoal > 0) {
+        totals[row.name] = getRabbitTotal(challengeGoal, start, end);
       } else {
         totals[row.name] = row.total;
       }

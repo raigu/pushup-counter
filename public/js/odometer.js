@@ -1,3 +1,5 @@
+let challengeGoal = null;
+
 function getDigitHeight() {
   return window.innerWidth <= 600 ? 44 : 56;
 }
@@ -9,13 +11,20 @@ function createOdometerHTML(name) {
   const digitSlot = `<div class="digit-slot"><div class="digit-reel">${
     [0,1,2,3,4,5,6,7,8,9].map(d => `<span>${d}</span>`).join('')
   }</div></div>`;
-  return `
+  let html = `
     <div class="person${isRabbit ? ' rabbit' : ''}" data-person="${name}">
       <div class="name">${name}${isRabbit ? ' <span class="rabbit-badge">RABBIT</span>' : ''}</div>
       <div class="odometer" id="odo-${name}">
         ${digitSlot.repeat(5)}
-      </div>
+      </div>`;
+  if (challengeGoal) {
+    html += `
+      <div class="goal-bar"><div class="goal-fill"></div></div>
+      <div class="goal-text">0 / ${challengeGoal}</div>`;
+  }
+  html += `
     </div>`;
+  return html;
 }
 
 function setOdometer(personId, value) {
@@ -49,6 +58,19 @@ async function fetchTotals() {
 
     for (const [person, total] of Object.entries(data)) {
       setOdometer(person, total);
+      if (challengeGoal) {
+        const personEl = document.querySelector(`.person[data-person="${person}"]`);
+        if (personEl) {
+          const pct = Math.min(100, (total / challengeGoal) * 100);
+          const fill = personEl.querySelector('.goal-fill');
+          const text = personEl.querySelector('.goal-text');
+          if (fill) {
+            fill.style.width = pct + '%';
+            fill.classList.toggle('reached', total >= challengeGoal);
+          }
+          if (text) text.textContent = `${total} / ${challengeGoal}`;
+        }
+      }
     }
   } catch (e) {
     console.error('Failed to fetch totals:', e);
@@ -69,6 +91,7 @@ async function fetchChallenge() {
 
     document.getElementById('challenge-title').textContent = data.title || '';
 
+    challengeGoal = data.goal || null;
     rabbitUsers = data.rabbits || [];
 
     startCountdown(start);

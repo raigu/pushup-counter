@@ -149,18 +149,41 @@ describe('API', () => {
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
 
-    it('includes target when challenge_target is set', async () => {
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
+    it('returns goal as null by default', async () => {
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
       const res = await request(server, 'GET', '/api/challenge');
-      assert.equal(res.body.target, 3000);
-
-      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
+      assert.equal(res.status, 200);
+      assert.equal(res.body.goal, null);
     });
 
-    it('does not include target when not set', async () => {
-      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
+    it('returns goal when set in settings', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '1000')").run();
       const res = await request(server, 'GET', '/api/challenge');
-      assert.equal(res.body.target, undefined);
+      assert.equal(res.status, 200);
+      assert.equal(res.body.goal, 1000);
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+    });
+
+    it('goal does not affect pushup submission', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '100')").run();
+      seedUser(db, 'zara', 'sec-zara');
+
+      const res = await request(server, 'POST', '/api/push', { person: 'zara', count: 50, secret: 'sec-zara' });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.total, 50);
+
+      db.prepare("DELETE FROM pushup_entries").run();
+      db.prepare("DELETE FROM users").run();
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+    });
+
+    it('goal does not affect totals endpoint', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '500')").run();
+      const res = await request(server, 'GET', '/api/challenge/totals');
+      assert.equal(res.status, 200);
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
     });
   });
 
@@ -202,7 +225,7 @@ describe('API', () => {
       const origEnd = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(startStr);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(endStr);
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '3000')").run();
 
       db.prepare("INSERT INTO users (name, secret, is_rabbit) VALUES (?, ?, 1)")
         .run('rabbit', 'sec-rabbit');
@@ -217,7 +240,7 @@ describe('API', () => {
       // Restore
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(origStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
-      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
 
@@ -229,7 +252,7 @@ describe('API', () => {
       const futureEnd = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(futureStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(futureEnd);
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '3000')").run();
 
       db.prepare("INSERT INTO users (name, secret, is_rabbit) VALUES (?, ?, 1)")
         .run('rabbit', 'sec-rabbit');
@@ -240,7 +263,7 @@ describe('API', () => {
 
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(origStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
-      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
 
@@ -252,7 +275,7 @@ describe('API', () => {
       const pastEnd = new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 10);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(pastStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(pastEnd);
-      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '3000')").run();
 
       db.prepare("INSERT INTO users (name, secret, is_rabbit) VALUES (?, ?, 1)")
         .run('rabbit', 'sec-rabbit');
@@ -263,7 +286,7 @@ describe('API', () => {
 
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(origStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
-      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
   });
