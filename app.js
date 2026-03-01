@@ -12,7 +12,9 @@ function createApp(db) {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
     const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
-    const result = { start: start.value, end: end.value };
+    const goalRow = db.prepare("SELECT value FROM settings WHERE key = 'challenge_goal'").get();
+    const goal = goalRow ? parseInt(goalRow.value, 10) : null;
+    const result = { start: start.value, end: end.value, goal };
     if (title) result.title = title.value;
     res.json(result);
   });

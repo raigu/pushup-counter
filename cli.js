@@ -12,7 +12,9 @@ Usage:
   node cli.js remove-user <NAME>          Remove a user (keeps pushup history)
   node cli.js set-challenge <START> <END>  Set challenge start/end dates
   node cli.js set-title [TITLE]            Set or clear challenge title
-  node cli.js show-challenge               Show current challenge dates and title
+  node cli.js set-goal <NUMBER>            Set the pushup goal (positive integer)
+  node cli.js clear-goal                   Remove the pushup goal
+  node cli.js show-challenge               Show current challenge dates, title, and goal
   node cli.js help                        Show this help
 
 Examples:
@@ -98,10 +100,26 @@ switch (command) {
     }
     break;
   }
+  case 'set-goal': {
+    const n = parseInt(args[1], 10);
+    if (!args[1] || Number.isNaN(n) || n < 1) {
+      console.error('Usage: node cli.js set-goal <NUMBER> (positive integer)');
+      process.exit(1);
+    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', ?)").run(String(n));
+    console.log(`Goal set: ${n}`);
+    break;
+  }
+  case 'clear-goal': {
+    db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+    console.log('Goal cleared.');
+    break;
+  }
   case 'show-challenge': {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
     const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
+    const goal = db.prepare("SELECT value FROM settings WHERE key = 'challenge_goal'").get();
     if (!start || !end) {
       console.log('No challenge dates set.');
     } else if (title) {
@@ -109,6 +127,7 @@ switch (command) {
     } else {
       console.log(`Challenge: ${start.value} to ${end.value}`);
     }
+    console.log(`Goal: ${goal ? goal.value : 'not set'}`);
     break;
   }
   case 'help':
