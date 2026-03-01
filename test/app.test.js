@@ -101,6 +101,28 @@ describe('API', () => {
 
       db.prepare("DELETE FROM settings WHERE key = 'challenge_title'").run();
     });
+
+    it('title can be changed', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_title', 'First title')").run();
+      let res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.body.title, 'First title');
+
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_title', 'Second title')").run();
+      res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.body.title, 'Second title');
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_title'").run();
+    });
+
+    it('title disappears after being cleared', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_title', 'Temp')").run();
+      let res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.body.title, 'Temp');
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_title'").run();
+      res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.body.title, undefined);
+    });
   });
 
   describe('GET /api/challenge/totals', () => {
