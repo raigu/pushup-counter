@@ -56,14 +56,17 @@ A challenge defines the time period for tracking pushups. Totals on the public d
 # Set challenge dates
 docker exec pushups node cli.js set-challenge 2026-03-15 2027-03-15
 
-# Set challenge dates with a title (displayed on the public dashboard)
-docker exec pushups node cli.js set-challenge 2026-03-15 2027-03-15 "Renno 50k"
+# Set a title (displayed on the public dashboard)
+docker exec pushups node cli.js set-title "Renno 50k"
+
+# Clear the title
+docker exec pushups node cli.js set-title
 
 # Show current challenge
 docker exec pushups node cli.js show-challenge
 ```
 
-The title is optional. When omitted, no title is displayed and the dashboard looks the same as before. Re-running `set-challenge` without a title clears any previously set title.
+The title is optional. When no title is set, nothing is displayed and the dashboard looks the same as before. Run `set-title` without an argument to clear it.
 
 ## Pages
 
