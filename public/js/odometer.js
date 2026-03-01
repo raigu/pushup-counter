@@ -2,13 +2,16 @@ function getDigitHeight() {
   return window.innerWidth <= 600 ? 44 : 56;
 }
 
+let rabbitUsers = [];
+
 function createOdometerHTML(name) {
+  const isRabbit = rabbitUsers.includes(name);
   const digitSlot = `<div class="digit-slot"><div class="digit-reel">${
     [0,1,2,3,4,5,6,7,8,9].map(d => `<span>${d}</span>`).join('')
   }</div></div>`;
   return `
-    <div class="person" data-person="${name}">
-      <div class="name">${name}</div>
+    <div class="person${isRabbit ? ' rabbit' : ''}" data-person="${name}">
+      <div class="name">${name}${isRabbit ? ' <span class="rabbit-badge">RABBIT</span>' : ''}</div>
       <div class="odometer" id="odo-${name}">
         ${digitSlot.repeat(5)}
       </div>
@@ -65,6 +68,8 @@ async function fetchChallenge() {
       start.toLocaleDateString(undefined, opts) + ' – ' + end.toLocaleDateString(undefined, opts);
 
     document.getElementById('challenge-title').textContent = data.title || '';
+
+    rabbitUsers = data.rabbits || [];
 
     startCountdown(start);
   } catch (e) {

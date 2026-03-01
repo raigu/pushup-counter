@@ -14,15 +14,33 @@ function createApp(db) {
     const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
     const result = { start: start.value, end: end.value };
     if (title) result.title = title.value;
+    const rabbits = db.prepare("SELECT name FROM users WHERE is_rabbit = 1").all().map(r => r.name);
+    if (rabbits.length > 0) result.rabbits = rabbits;
     res.json(result);
   });
+
+  // Compute a rabbit user's current virtual total based on elapsed time
+  function getRabbitTotal(target, interval, startStr, endStr) {
+    const now = new Date();
+    const start = new Date(startStr + 'T00:00:00');
+    const end = new Date(endStr + 'T00:00:00');
+    if (now <= start) return 0;
+    if (now >= end) return target;
+    const totalMinutes = (end - start) / 60000;
+    const elapsedMinutes = (now - start) / 60000;
+    const totalIntervals = Math.floor(totalMinutes / interval);
+    if (totalIntervals <= 0) return target;
+    const intervalsElapsed = Math.floor(elapsedMinutes / interval);
+    return Math.floor(target * intervalsElapsed / totalIntervals);
+  }
 
   // API: get totals within challenge period
   app.get('/api/challenge/totals', (req, res) => {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
     const rows = db.prepare(`
-      SELECT u.name, COALESCE(SUM(e.count), 0) as total
+      SELECT u.name, u.is_rabbit, u.rabbit_target, u.rabbit_interval,
+             COALESCE(SUM(e.count), 0) as total
       FROM users u
       LEFT JOIN pushup_entries e ON e.user_id = u.id
         AND e.created_at >= ? AND e.created_at < date(?, '+1 day')
@@ -31,7 +49,11 @@ function createApp(db) {
     `).all(start, end);
     const totals = {};
     for (const row of rows) {
-      totals[row.name] = row.total;
+      if (row.is_rabbit) {
+        totals[row.name] = getRabbitTotal(row.rabbit_target, row.rabbit_interval, start, end);
+      } else {
+        totals[row.name] = row.total;
+      }
     }
     res.json(totals);
   });

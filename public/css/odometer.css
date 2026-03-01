@@ -141,6 +141,22 @@ body {
   }
 }
 
+.person.rabbit .odometer {
+  border-color: #665533;
+  opacity: 0.7;
+}
+
+.person.rabbit .name {
+  color: #999;
+}
+
+.rabbit-badge {
+  font-size: 0.6em;
+  color: #aa8844;
+  vertical-align: middle;
+  letter-spacing: 1px;
+}
+
 .empty {
   grid-column: 1 / -1;
   text-align: center;

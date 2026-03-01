@@ -29,6 +29,10 @@ const migrations = [
       db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)").run('challenge_end', end);
     }
   },
+  // 4: Add rabbit pace-setter columns to users
+  `ALTER TABLE users ADD COLUMN is_rabbit INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN rabbit_target INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE users ADD COLUMN rabbit_interval INTEGER NOT NULL DEFAULT 60`,
 ];
 
 function migrate(db) {
