@@ -48,14 +48,15 @@ function createApp(db) {
       GROUP BY u.id
       ORDER BY u.name
     `).all(start, end);
-    const totals = {};
+    const unsorted = [];
     for (const row of rows) {
-      if (row.is_rabbit && challengeGoal > 0) {
-        totals[row.name] = getRabbitTotal(challengeGoal, start, end);
-      } else {
-        totals[row.name] = row.total;
-      }
+      const total = (row.is_rabbit && challengeGoal > 0)
+        ? getRabbitTotal(challengeGoal, start, end)
+        : row.total;
+      unsorted.push([row.name, total]);
     }
+    unsorted.sort((a, b) => b[1] - a[1]);
+    const totals = Object.fromEntries(unsorted);
     res.json(totals);
   });
 
