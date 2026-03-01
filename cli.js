@@ -12,8 +12,9 @@ Usage:
   node cli.js remove-user <NAME>          Remove a user (keeps pushup history)
   node cli.js set-challenge <START> <END>  Set challenge start/end dates
   node cli.js set-title [TITLE]            Set or clear challenge title
-  node cli.js show-challenge               Show current challenge dates and title
-  node cli.js set-rabbit <NAME> <TARGET>   Mark user as rabbit pace-setter
+  node cli.js set-target <TARGET>          Set challenge target (pushup goal)
+  node cli.js show-challenge               Show current challenge dates, title and target
+  node cli.js set-rabbit <NAME>            Mark user as rabbit pace-setter
   node cli.js unset-rabbit <NAME>          Remove rabbit status from user
   node cli.js help                        Show this help
 
@@ -21,7 +22,8 @@ Examples:
   node cli.js add-user mait mait3242
   node cli.js list-users
   node cli.js remove-user mait
-  node cli.js set-rabbit rabbit 3000      Set rabbit to reach 3000 pushups by challenge end`);
+  node cli.js set-target 3000
+  node cli.js set-rabbit rabbit`);
 }
 
 switch (command) {
@@ -45,13 +47,13 @@ switch (command) {
     break;
   }
   case 'list-users': {
-    const users = db.prepare('SELECT name, is_rabbit, rabbit_target FROM users ORDER BY name').all();
+    const users = db.prepare('SELECT name, is_rabbit FROM users ORDER BY name').all();
     if (users.length === 0) {
       console.log('No users.');
     } else {
       for (const u of users) {
         if (u.is_rabbit) {
-          console.log(`${u.name} [rabbit: target=${u.rabbit_target}]`);
+          console.log(`${u.name} [rabbit]`);
         } else {
           console.log(u.name);
         }
@@ -105,10 +107,22 @@ switch (command) {
     }
     break;
   }
+  case 'set-target': {
+    const target = parseInt(args[1], 10);
+    if (!target || Number.isNaN(target) || target < 1) {
+      console.error('Usage: node cli.js set-target <TARGET>');
+      console.error('Example: node cli.js set-target 3000');
+      process.exit(1);
+    }
+    db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', ?)").run(String(target));
+    console.log(`Challenge target set: ${target}`);
+    break;
+  }
   case 'show-challenge': {
     const start = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get();
     const end = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get();
     const title = db.prepare("SELECT value FROM settings WHERE key = 'challenge_title'").get();
+    const target = db.prepare("SELECT value FROM settings WHERE key = 'challenge_target'").get();
     if (!start || !end) {
       console.log('No challenge dates set.');
     } else if (title) {
@@ -116,14 +130,13 @@ switch (command) {
     } else {
       console.log(`Challenge: ${start.value} to ${end.value}`);
     }
+    if (target) console.log(`Target: ${target.value}`);
     break;
   }
   case 'set-rabbit': {
     const name = args[1];
-    const target = parseInt(args[2], 10);
-    if (!name || !target || Number.isNaN(target) || target < 1) {
-      console.error('Usage: node cli.js set-rabbit <NAME> <TARGET>');
-      console.error('  TARGET: total pushups the rabbit should reach by challenge end');
+    if (!name) {
+      console.error('Usage: node cli.js set-rabbit <NAME>');
       process.exit(1);
     }
     const user = db.prepare('SELECT id FROM users WHERE name = ?').get(name.toLowerCase());
@@ -131,9 +144,8 @@ switch (command) {
       console.error(`Error: User ${name.toLowerCase()} not found. Add the user first.`);
       process.exit(1);
     }
-    db.prepare('UPDATE users SET is_rabbit = 1, rabbit_target = ? WHERE name = ?')
-      .run(target, name.toLowerCase());
-    console.log(`User ${name.toLowerCase()} set as rabbit: target=${target}`);
+    db.prepare('UPDATE users SET is_rabbit = 1 WHERE name = ?').run(name.toLowerCase());
+    console.log(`User ${name.toLowerCase()} set as rabbit.`);
     break;
   }
   case 'unset-rabbit': {
@@ -142,7 +154,7 @@ switch (command) {
       console.error('Usage: node cli.js unset-rabbit <NAME>');
       process.exit(1);
     }
-    const result = db.prepare('UPDATE users SET is_rabbit = 0, rabbit_target = 0 WHERE name = ?')
+    const result = db.prepare('UPDATE users SET is_rabbit = 0 WHERE name = ?')
       .run(name.toLowerCase());
     if (result.changes === 0) {
       console.error(`User ${name.toLowerCase()} not found.`);

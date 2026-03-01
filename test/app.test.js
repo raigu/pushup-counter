@@ -38,7 +38,7 @@ describe('DB migrations', () => {
   it('sets correct schema version', () => {
     const db = makeDb();
     const version = db.pragma('user_version', { simple: true });
-    assert.equal(version, 7);
+    assert.equal(version, 8);
     db.close();
   });
 
@@ -50,12 +50,12 @@ describe('DB migrations', () => {
     db.close();
   });
 
-  it('adds rabbit columns to users table', () => {
+  it('adds rabbit column to users table', () => {
     const db = makeDb();
     const info = db.prepare("PRAGMA table_info(users)").all();
     const colNames = info.map(c => c.name);
     assert.ok(colNames.includes('is_rabbit'));
-    assert.ok(colNames.includes('rabbit_target'));
+    assert.ok(!colNames.includes('rabbit_target'), 'rabbit_target should be dropped');
     assert.ok(!colNames.includes('rabbit_interval'), 'rabbit_interval should be dropped');
     db.close();
   });
@@ -140,13 +140,27 @@ describe('API', () => {
     });
 
     it('includes rabbits array when rabbit users exist', async () => {
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit) VALUES (?, ?, 1)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge');
       assert.deepEqual(res.body.rabbits, ['rabbit']);
 
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
+    });
+
+    it('includes target when challenge_target is set', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
+      const res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.body.target, 3000);
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
+    });
+
+    it('does not include target when not set', async () => {
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
+      const res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.body.target, undefined);
     });
   });
 
@@ -188,8 +202,9 @@ describe('API', () => {
       const origEnd = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(startStr);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(endStr);
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
 
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit) VALUES (?, ?, 1)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge/totals');
@@ -202,6 +217,7 @@ describe('API', () => {
       // Restore
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(origStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
 
@@ -213,8 +229,9 @@ describe('API', () => {
       const futureEnd = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(futureStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(futureEnd);
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
 
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit) VALUES (?, ?, 1)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge/totals');
@@ -223,6 +240,7 @@ describe('API', () => {
 
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(origStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
 
@@ -234,8 +252,9 @@ describe('API', () => {
       const pastEnd = new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 10);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(pastStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(pastEnd);
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_target', '3000')").run();
 
-      db.prepare("INSERT INTO users (name, secret, is_rabbit, rabbit_target) VALUES (?, ?, 1, 3000)")
+      db.prepare("INSERT INTO users (name, secret, is_rabbit) VALUES (?, ?, 1)")
         .run('rabbit', 'sec-rabbit');
 
       const res = await request(server, 'GET', '/api/challenge/totals');
@@ -244,6 +263,7 @@ describe('API', () => {
 
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(origStart);
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_target'").run();
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
   });
