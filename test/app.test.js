@@ -123,6 +123,43 @@ describe('API', () => {
       res = await request(server, 'GET', '/api/challenge');
       assert.equal(res.body.title, undefined);
     });
+
+    it('returns goal as null by default', async () => {
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+      const res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.status, 200);
+      assert.equal(res.body.goal, null);
+    });
+
+    it('returns goal when set in settings', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '1000')").run();
+      const res = await request(server, 'GET', '/api/challenge');
+      assert.equal(res.status, 200);
+      assert.equal(res.body.goal, 1000);
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+    });
+
+    it('goal does not affect pushup submission', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '100')").run();
+      seedUser(db, 'zara', 'sec-zara');
+
+      const res = await request(server, 'POST', '/api/push', { person: 'zara', count: 50, secret: 'sec-zara' });
+      assert.equal(res.status, 200);
+      assert.equal(res.body.total, 50);
+
+      db.prepare("DELETE FROM pushup_entries").run();
+      db.prepare("DELETE FROM users").run();
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+    });
+
+    it('goal does not affect totals endpoint', async () => {
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '500')").run();
+      const res = await request(server, 'GET', '/api/challenge/totals');
+      assert.equal(res.status, 200);
+
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+    });
   });
 
   describe('GET /api/challenge/totals', () => {

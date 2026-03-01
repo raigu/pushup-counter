@@ -141,6 +141,33 @@ body {
   }
 }
 
+.goal-bar {
+  width: 100%;
+  max-width: 220px;
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  margin: 8px auto 4px;
+  overflow: hidden;
+}
+
+.goal-fill {
+  height: 100%;
+  width: 0%;
+  background: #e94560;
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+.goal-fill.reached {
+  background: #2ecc71;
+}
+
+.goal-text {
+  font-size: 0.85rem;
+  color: #666;
+}
+
 .empty {
   grid-column: 1 / -1;
   text-align: center;
