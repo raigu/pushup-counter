@@ -97,6 +97,7 @@ async function fetchChallenge() {
       start.toLocaleDateString(undefined, opts) + ' – ' + end.toLocaleDateString(undefined, opts);
 
     document.getElementById('challenge-title').textContent = data.title || '';
+    document.title = data.title || 'Pushup Tracker';
 
     challengeGoal = data.goal || null;
     rabbitUsers = data.rabbits || [];
