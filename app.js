@@ -57,6 +57,9 @@ function createApp(db) {
     }
     unsorted.sort((a, b) => b[1] - a[1]);
     const totals = Object.fromEntries(unsorted);
+    if (challengeGoal > 0) {
+      totals._rabbitPace = getRabbitTotal(challengeGoal, start, end);
+    }
     res.json(totals);
   });
 

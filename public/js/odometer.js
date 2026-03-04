@@ -20,7 +20,7 @@ function createOdometerHTML(name) {
   if (challengeGoal) {
     html += `
       <div class="goal-bar"><div class="goal-fill"></div></div>
-      <div class="goal-text">0 / ${challengeGoal}</div>`;
+      <div class="goal-text">0%</div>`;
   }
   html += `
     </div>`;
@@ -45,6 +45,8 @@ async function fetchTotals() {
   try {
     const res = await fetch('/api/challenge/totals');
     const data = await res.json();
+    const rabbitPace = data._rabbitPace;
+    delete data._rabbitPace;
     const users = Object.keys(data).sort((a, b) => data[b] - data[a]);
 
     // Rebuild board if users changed
@@ -66,9 +68,14 @@ async function fetchTotals() {
           const text = personEl.querySelector('.goal-text');
           if (fill) {
             fill.style.width = pct + '%';
-            fill.classList.toggle('reached', total >= challengeGoal);
+            fill.className = 'goal-fill';
+            if (rabbitPace !== undefined) {
+              if (total > rabbitPace) fill.classList.add('goal-fill--ahead');
+              else if (total === rabbitPace) fill.classList.add('goal-fill--on-track');
+              else fill.classList.add('goal-fill--behind');
+            }
           }
-          if (text) text.textContent = `${total} / ${challengeGoal}`;
+          if (text) text.textContent = `${Math.round((total / challengeGoal) * 100)}%`;
         }
       }
     }
