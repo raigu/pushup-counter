@@ -20,7 +20,7 @@ function createOdometerHTML(name) {
   if (challengeGoal) {
     html += `
       <div class="goal-bar"><div class="goal-fill"></div></div>
-      <div class="goal-text">0 / ${challengeGoal}</div>`;
+      <div class="goal-text">0%</div>`;
   }
   html += `
     </div>`;
@@ -68,7 +68,7 @@ async function fetchTotals() {
             fill.style.width = pct + '%';
             fill.classList.toggle('reached', total >= challengeGoal);
           }
-          if (text) text.textContent = `${total} / ${challengeGoal}`;
+          if (text) text.textContent = `${Math.round((total / challengeGoal) * 100)}%`;
         }
       }
     }
