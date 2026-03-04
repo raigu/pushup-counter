@@ -13,7 +13,7 @@ function createOdometerHTML(name) {
   }</div></div>`;
   let html = `
     <div class="person${isRabbit ? ' rabbit' : ''}" data-person="${name}">
-      <div class="name">${name}${isRabbit ? ' <span class="rabbit-badge">RABBIT</span>' : ''}</div>
+      <div class="name">${name}${isRabbit ? ' <span class="rabbit-badge">🐇</span>' : ''}</div>
       <div class="odometer" id="odo-${name}">
         ${digitSlot.repeat(5)}
       </div>`;
