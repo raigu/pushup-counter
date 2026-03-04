@@ -267,6 +267,27 @@ describe('API', () => {
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
     });
 
+    it('returns _rabbitPace when goal is set', async () => {
+      const now = new Date();
+      const pastStart = new Date(now.getTime() - 15 * 86400000).toISOString().slice(0, 10);
+      const futureEnd = new Date(now.getTime() + 15 * 86400000).toISOString().slice(0, 10);
+      const origStart = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
+      const origEnd = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(pastStart);
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(futureEnd);
+      db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('challenge_goal', '3000')").run();
+
+      const res = await request(server, 'GET', '/api/challenge/totals');
+      assert.equal(res.status, 200);
+      assert.ok(typeof res.body._rabbitPace === 'number');
+      assert.ok(res.body._rabbitPace > 0, '_rabbitPace should be > 0 midway');
+      assert.ok(res.body._rabbitPace < 3000, '_rabbitPace should be < goal');
+
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_start'").run(origStart);
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+    });
+
     it('returns target for rabbit user after challenge ends', async () => {
       const origStart = db.prepare("SELECT value FROM settings WHERE key = 'challenge_start'").get().value;
       const origEnd = db.prepare("SELECT value FROM settings WHERE key = 'challenge_end'").get().value;
@@ -288,6 +309,13 @@ describe('API', () => {
       db.prepare("UPDATE settings SET value = ? WHERE key = 'challenge_end'").run(origEnd);
       db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
       db.prepare("DELETE FROM users WHERE name = 'rabbit'").run();
+    });
+
+    it('does not return _rabbitPace when no goal is set', async () => {
+      db.prepare("DELETE FROM settings WHERE key = 'challenge_goal'").run();
+      const res = await request(server, 'GET', '/api/challenge/totals');
+      assert.equal(res.status, 200);
+      assert.equal(res.body._rabbitPace, undefined);
     });
   });
 
