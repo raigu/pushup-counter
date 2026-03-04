@@ -170,13 +170,20 @@ body {
 .goal-fill {
   height: 100%;
   width: 0%;
-  background: #e94560;
   border-radius: 3px;
   transition: width 0.8s ease;
 }
 
-.goal-fill.reached {
+.goal-fill--ahead {
   background: #2ecc71;
+}
+
+.goal-fill--on-track {
+  background: #f1c40f;
+}
+
+.goal-fill--behind {
+  background: #e94560;
 }
 
 .goal-text {
